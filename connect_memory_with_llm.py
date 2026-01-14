@@ -2,9 +2,10 @@ import os
 from dotenv import load_dotenv
 from langchain_community.chat_models import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
-from langchain.chains import RetrievalQA
+from langchain.chains import RetrievalQA, ConversationalRetrievalChain
 from langchain_community.vectorstores import FAISS
 from langchain.embeddings import OpenAIEmbeddings
+from langchain.memory import ConversationBufferMemory
 
 load_dotenv()
 
@@ -48,22 +49,46 @@ DB_FAISS_PATH = "vectorstore/db_faiss"
 embedding_model = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
 db = FAISS.load_local(DB_FAISS_PATH, embedding_model, allow_dangerous_deserialization=True)
 
-# Create QA Chain
-qa_chain = RetrievalQA.from_chain_type(
-    llm=load_llm(model_name="gpt-3.5-turbo"),
-    chain_type="stuff",
-    retriever=db.as_retriever(search_kwargs={"k": 3}),
-    return_source_documents=True,
-    chain_type_kwargs={"prompt": set_custom_prompt(CUSTOM_PROMPT_TEMPLATE)}
-)
 
-# Run Query
-user_query = input("Write YOUR QUERY HERE: ")
-response = qa_chain.invoke({"query": user_query})
+memory = ConversationBufferMemory(memory_key = "chat_history", return_messages = True)
 
-print("\nRESULT: ", response["result"])
-print("\nSOURCE DOCUMENTS: ", response["source_documents"])
+# # Create QA Chain
+# qa_chain = RetrievalQA.from_chain_type(
+#     llm=load_llm(model_name="gpt-3.5-turbo"),
+#     chain_type="stuff",
+#     retriever=db.as_retriever(search_kwargs={"k": 3}),
+#     return_source_documents=True,
+#     chain_type_kwargs={"prompt": set_custom_prompt(CUSTOM_PROMPT_TEMPLATE)}
+# )
+
+qa = ConversationalRetrievalChain.from_llm(load_llm(model_name="gpt-3.5-turbo"), 
+                                           chain_type="stuff", 
+                                           retriever=db.as_retriever(search_kwargs={"k": 3}), 
+                                           memory = memory, 
+                                           get_chat_history=lambda h : h, 
+                                           return_source_documents=False,
+                                           chain_type_kwargs={"prompt": set_custom_prompt(CUSTOM_PROMPT_TEMPLATE)})
 
 
+# AGENT FUNCTION (Interactive Chatbot)
+
+def run_agent():
+    print("\n🔹 RAG Agent is running")
+    print("Type 'quit', 'exit', or 'bye' to stop.\n")
+
+    while True:
+        user_query = input("Question: ")
+
+        if user_query.lower() in ["quit", "exit", "bye"]:
+            print("Answer: Goodbye 👋")
+            break
+
+        response = qa.invoke(
+            {"question": user_query}
+        )
+
+        print("Answer:", response["answer"], "\n")
 
 
+# RUN AGENT
+run_agent()
