@@ -1,8 +1,8 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
-from langchain.chat_models import ChatOpenAI
-from langchain.embeddings import OpenAIEmbeddings
+
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 from langchain_core.prompts import PromptTemplate
@@ -22,7 +22,7 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 @st.cache_resource
 def get_vectorstore():
-    embedding_model = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+    embedding_model = OpenAIEmbeddings(api_key=OPENAI_API_KEY)
     db = FAISS.load_local(DB_FAISS_PATH, embedding_model, allow_dangerous_deserialization=True)
     return db
 
@@ -53,8 +53,8 @@ def set_custom_prompt():
 # -----------------------------
 def load_llm(model_name="gpt-3.5-turbo", temperature=0.5, max_tokens=512):
     llm = ChatOpenAI(
-        openai_api_key=OPENAI_API_KEY,
-        model_name=model_name,
+        api_key=OPENAI_API_KEY,
+        model=model_name,
         temperature=temperature,
         max_tokens=max_tokens
     )
