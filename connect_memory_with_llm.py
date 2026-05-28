@@ -1,10 +1,9 @@
 import os
 from dotenv import load_dotenv
-from langchain_community.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA, ConversationalRetrievalChain
 from langchain_community.vectorstores import FAISS
-from langchain.embeddings import OpenAIEmbeddings
 from langchain.memory import ConversationBufferMemory
 
 load_dotenv()
@@ -16,8 +15,8 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 # Setup LLM (OpenAI Chat Model)
 def load_llm(model_name="gpt-3.5-turbo", temperature=0.5, max_tokens=512):
     llm = ChatOpenAI(
-        openai_api_key=OPENAI_API_KEY,
-        model_name=model_name,
+        api_key=OPENAI_API_KEY,
+        model=model_name,
         temperature=temperature,
         max_tokens=max_tokens
     )
@@ -46,7 +45,7 @@ def set_custom_prompt(custom_prompt_template):
 
 # Load FAISS Vectorstore
 DB_FAISS_PATH = "vectorstore/db_faiss"
-embedding_model = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+embedding_model = OpenAIEmbeddings(api_key=OPENAI_API_KEY)
 db = FAISS.load_local(DB_FAISS_PATH, embedding_model, allow_dangerous_deserialization=True)
 
 
